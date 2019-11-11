@@ -1,0 +1,35 @@
+#define A 4.000
+#define B 4.000
+
+signed short int overdrive(signed short int input)
+{
+float x; /* Input to equation */
+float y; /* Output of equation */
+short int output;
+/* Scale input between -1.000 and +1.000 */
+x = (float) input / 32767.0;
+if ( x > 0.0 )
+{
+/* Input is positive */
+y = A * x - B * x * x ;
+}
+else
+{
+/* Input is negative */
+y = A * x + B * x * x ;
+}
+/* Re-scale y between -32767.0 and +32767.0 */
+y *= 32767.0;
+/* Range check output just in case of overrange */
+
+if ( y > 32767.0)
+{
+y = 32767.0;
+}
+else if ( y < -32767.0)
+{
+y = -32767.0;
+}
+/* Convert back to short int and return to calling function */
+output = (signed short int) y;
+return( output );}

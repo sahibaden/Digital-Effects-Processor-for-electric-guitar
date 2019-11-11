@@ -1,0 +1,36 @@
+#define A 25350
+#define B 736
+signed int distortion( signed int input )
+{
+signed long output;
+if ( input == 0)
+{
+output = 0;
+}
+else if ( input > 0)
+{
+output = (long) ( input * input) >> 15;
+output = -output * B; /* -b * x ^ 2 */
+output += (input * A); /* a * x */
+output >>= ( 15 - 4 ); /* Divide by 32767 and multiply by 16 */
+}
+else
+{
+output = (long) ( input * input) >> 15;
+output = output * B; /* b * x ^ 2 */
+output += (input * A); /* a * x */
+output >>= ( 15 - 4 ); /* Divide by 32767 and multiply by 16 */
+}
+/* Limit output */
+if ( output > 10000)
+
+{
+output = 10000 ;
+}
+else if ( output < -10000 )
+{
+output = -10000;
+}
+/* Reduce volume by dividing by 4 */
+return( (short int) output >> 2);
+}

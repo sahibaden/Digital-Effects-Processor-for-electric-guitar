@@ -1,0 +1,117 @@
+Code for Fuzz
+#include "dsk6713.h"
+#include "dsk6713_aic23.h"
+#include "stdlib.h"
+#include"stdio.h"
+#include "math.h"
+#include "fuzz.h"
+#define X 1000
+#define Y 15000
+
+#define GRADIENT (Y/X)
+// Codec configuration settings
+DSK6713_AIC23_Config config = { \
+0x0017, /* 0 DSK6713_AIC23_LEFTINVOL Left line input channel volume */ \
+0x0017, /* 1 DSK6713_AIC23_RIGHTINVOL Right line input channel volume */\
+0x01f9, /* 2 DSK6713_AIC23_LEFTHPVOL Left channel headphone volume */ \
+0x01f9, /* 3 DSK6713_AIC23_RIGHTHPVOL Right channel headphone volume */ \
+0x0011, /* 4 DSK6713_AIC23_ANAPATH Analog audio path control */ \
+0x0000, /* 5 DSK6713_AIC23_DIGPATH Digital audio path control */ \
+0x0000, /* 6 DSK6713_AIC23_POWERDOWN Power down control */ \
+0x0043, /* 7 DSK6713_AIC23_DIGIF Digital audio interface format */ \
+0x0001, /* 8 DSK6713_AIC23_SAMPLERATE Sample rate control */ \
+0x0001 /* 9 DSK6713_AIC23_DIGACT Digital interface activation */ \
+};
+void main()
+{
+DSK6713_AIC23_CodecHandle hCodec;
+Int16 OUT_L, OUT_R;
+
+Uint32 IN_L;
+Uint32 IN_R;
+// Initialize BSL
+DSK6713_init();
+
+DSK6713_DIP_init();
+//Start codec
+hCodec = DSK6713_AIC23_openCodec(0, &config);
+// Set frequency to 48KHz
+DSK6713_AIC23_setFreq(hCodec, DSK6713_AIC23_FREQ_48KHZ);
+
+for(;;)
+{
+// Read sample from the left channel
+while (!DSK6713_AIC23_read(hCodec, &IN_L));
+while (!DSK6713_AIC23_read(hCodec, &IN_R));
+
+if (DSK6713_DIP_get(3)==0)
+
+{
+IN_L= (short) fuzz((signed int)IN_L); // ************ press dip 3 for
+fuzz***********//
+
+IN_R= (short) fuzz((signed int)IN_L);
+IN_L=IN_L*2;
+IN_R=IN_R*2;
+OUT_L=IN_L;
+OUT_R=IN_R;
+while (!DSK6713_AIC23_write(hCodec, OUT_L));
+while (!DSK6713_AIC23_write(hCodec, OUT_R));
+
+}//////*********************************************//
+
+if (DSK6713_DIP_get(2)==0) //************** press dip 2 for volume amp
+*******************//
+
+{
+IN_L=IN_L*4;
+IN_R=IN_R*4;
+
+OUT_L=IN_L;
+
+OUT_R=IN_R;
+while (!DSK6713_AIC23_write(hCodec, OUT_L));
+while (!DSK6713_AIC23_write(hCodec, OUT_R));
+
+}//***********************//
+else
+
+{
+OUT_L=IN_L;
+OUT_R=IN_R;
+while (!DSK6713_AIC23_write(hCodec, OUT_L));
+while (!DSK6713_AIC23_write(hCodec, OUT_R));
+}
+}
+}
+signed int fuzz( signed int input)
+{
+signed long output;
+
+if ( (input > -X) && (input < X) )
+{
+/* Input amplitude lies between -500 and +500 */
+output = GRADIENT * (int) input ;
+}
+else if ( input < -X)
+{
+/* Input amplitude is less than -500 */
+output = -Y;
+}
+else
+{
+/* Input amplitude is greater than +500 */
+output = Y;
+}
+output >>= 3; /* Reduce output volume */
+/* Limit output between -32767 and +32767 in case of overload */
+if ( output > 32767)
+{
+output = 32767;
+}
+else if ( output < -32767)
+{
+output = - 32767;
+}
+return( (signed int)output );
+}
